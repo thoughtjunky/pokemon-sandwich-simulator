@@ -51,7 +51,13 @@ function App() {
                                              power.name === powers[1].name && power.value === powers[1].value &&
                                              power.name === powers[2].name && power.value === powers[2].value)) {
           // If the sandwich has the desired powers, add it to the results list
-          results.push(
+          results.push({
+            name: sandwich.name,
+            fillings: sandwich.fillings,
+            condiments: sandwich.condiments,
+            powers: sandwich.powers
+          });
+
 
   useEffect(() => {
     if (!megaSandwichMode) {
