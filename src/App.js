@@ -35,6 +35,24 @@ function App() {
   let activeSandwich = undefined;
   let activeSums;
 
+  // This function will be used to test every combination of user input
+  // to find a desired output that does not exist in a hardcoded recipe.
+  function testAllCombinations(fillings, condiments, powers) {
+    let results = [];
+
+    // Loop through all possible combinations of fillings and condiments
+    for (const filling of fillings) {
+      for (const condiment of condiments) {
+        // Create a sandwich using the current combination of fillings and condiments
+        const sandwich = craftSandwich(filling, condiment, activeSums);
+
+        // Check if the sandwich has the desired powers
+        if (sandwich.powers.filter(power => power.name === powers[0].name && power.value === powers[0].value &&
+                                             power.name === powers[1].name && power.value === powers[1].value &&
+                                             power.name === powers[2].name && power.value === powers[2].value)) {
+          // If the sandwich has the desired powers, add it to the results list
+          results.push(
+
   useEffect(() => {
     if (!megaSandwichMode) {
       const tempFillings = activeFillings.slice(0, Math.min(activeFillings.length, MAX_FILLINGS));
