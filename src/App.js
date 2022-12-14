@@ -1,7 +1,8 @@
 import SANDWICHES from './data/sandwiches.json';
 import FILLINGS from './data/fillings.json';
 import CONDIMENTS from './data/condiments.json';
-import POWERS from './data/powers.json';
+import TYPES from './data/types.json';
+import FLAVORS from './data/flavors.json';
 import { useEffect, useState } from 'react';
 import { getCondiments, getFillings,
   ALIAS_TO_FULL, COLORS, oneTwoFirst, getIngredientsSums, craftSandwich, checkPresetSandwich,
@@ -9,6 +10,7 @@ import { getCondiments, getFillings,
 import { runTests } from './test/tests';
 import Card from './components/Card';
 import './App.css';
+import Bubble from './components/Bubble';
 
 // per player
 const MAX_FILLINGS = 6;
@@ -20,7 +22,8 @@ function App() {
   const [advancedIngredients, setAdvancedIngredients] = useState(false);
   const [alwaysShowCustomSandwich, setAlwaysShowCustomSandwich] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
-  const [showSearchPanel, setShowSearchPanel] = useState(true);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [showEffectFilter, setShowEffectFilter] = useState(true);
   const [megaSandwichMode, setMegaSandwichMode] = useState(false);
 
   const [activeFillings, setActiveFillings] = useState([]);
@@ -144,15 +147,6 @@ function App() {
     }
   }, [results]);
 
-  useEffect(() => {
-    // handle removing active key if no ingredients with it
-    // eg. user clicks on bitter, but then removes the only bitter ingredient
-    if (!hasRelevance(activeSums, activeKey)) {
-      setActiveKey({});
-    }
-
-  }, [activeFillings, activeCondiments]);
-
   const pulse = () => {
     setHeartbeat(heartbeat + 1);
   };
@@ -171,6 +165,22 @@ function App() {
     );
   };
 
+  const checkAmountOfPower = (checkArr, power) => {
+    let retClass = 'ingredient-power-bg';
+    const activePower = checkArr["powers"].find((u) => u.type === power);
+
+    if (hasRelevance(checkArr, activeKey) && activePower !== undefined) { 
+      if(activePower.amount > 0) {
+        retClass += ' power-increase';
+      }
+      if(activePower.amount < 0) {
+        retClass += ' power-decrease';
+      }
+    } 
+
+    return retClass;
+  };
+
   const renderFilling = (filling, index, active) => {
     let className = "ingredient";
     if (active) {
@@ -182,8 +192,11 @@ function App() {
       divClass = 'ingredient-div ingredient-blur';
     }
 
+    const ingredientPowerClass = checkAmountOfPower(filling, activeKey["power"]);
+
     return (
     <div className={divClass} key={`filling-${index}-${active ? 'active' : 'dormant'}`}>
+      <div className={ingredientPowerClass}></div>
       <img
         alt={filling.name}
         title={filling.name}
@@ -231,9 +244,11 @@ function App() {
       divClass = 'ingredient-div ingredient-blur';
     }
 
+    const ingredientPowerClass = checkAmountOfPower(condiment, activeKey["power"]);
     
     return (
     <div className={divClass} key={`condiment-${index}-${active ? 'active' : 'dormant'}`}>
+      <div className={ingredientPowerClass}></div>
       <img
         alt={condiment.name}
         title={condiment.name}
@@ -392,8 +407,6 @@ function App() {
       <div className="bubble" key={key} id={`sandwich-${sandwich.number}`} onClick={() => {
         const condiments = getCondiments(sandwich.condiments);
         const fillings = getFillings(sandwich.fillings);
-        setActiveKey({});
-
         setActiveCondiments(condiments);
         setActiveFillings(fillings);
       }} style={{ backgroundColor: highlight ? "yellow" : "#80808030",
@@ -453,6 +466,51 @@ function App() {
     );
   };
 
+  const renderComplexSearch = () => {
+    return (
+      <div className="complex-search-panel">
+        <div className="bubble-row complex-row">
+          {FLAVORS.map((flavor) => (
+            <Bubble
+              label={flavor}
+              key={flavor}
+              isFlavor
+              onClick={() => toggleActiveKey(flavor)}
+              selected={
+                activeKey && Object.values(activeKey).indexOf(flavor) !== -1
+              }
+            />
+          ))}
+        </div>
+        <div className="bubble-row complex-row">
+          {Object.keys(ALIAS_TO_FULL).map((power) => (
+            <Bubble
+              label={power}
+              key={power}
+              onClick={() => toggleActiveKey(power)}
+              selected={
+                activeKey && Object.values(activeKey).indexOf(power) !== -1
+              }
+            />
+          ))}
+        </div>
+        <div className="bubble-row complex-row">
+          {TYPES.map((type) => (
+            <Bubble
+              label={type}
+              key={type}
+              isType
+              onClick={() => toggleActiveKey(type)}
+              selected={
+                activeKey && Object.values(activeKey).indexOf(type) !== -1
+              }
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const saveRecipe = () => {
     if (activeCondiments.length === 0) { return; }
 
@@ -470,8 +528,11 @@ function App() {
     }
   };
 
-  const loadRecipe = () => {
-    const recipe = window.prompt("Enter/paste recipe:", "");
+  const loadRecipe = recipe => {
+    if (!recipe) {
+      recipe = window.prompt("Enter/paste recipe:", "");
+    }
+    
     const ingredients = getIngredientsFromRecipe(recipe);
     if (ingredients) {
       const fillings = ingredients.fillings;
@@ -491,6 +552,7 @@ function App() {
       <div className='settings-bar'>
         <button className='button-spacing' onClick={() => setSimpleMode(!simpleMode)}>Toggle Simple Mode: {simpleMode ? "On" : "Off"}</button>
         <button className='button-spacing' onClick={() => setShowSearchPanel(!showSearchPanel)}>Toggle Search Panel</button>
+        {!simpleMode && <button className='button-spacing' onClick={() => setShowEffectFilter(!showEffectFilter)}>Toggle Effect Filter</button>}
         <button className='button-spacing' onClick={() => setMegaSandwichMode(!megaSandwichMode)}>Toggle Multiplayer Mode: {megaSandwichMode ? "On" : "Off"}</button>
         <button className='button-spacing' onClick={() => loadRecipe()}>Load Recipe</button>
         <button className='button-spacing' onClick={() => saveRecipe()}>Save Recipe</button>
@@ -500,6 +562,7 @@ function App() {
 
   return (
     <div className="App">
+      {!simpleMode && showEffectFilter && renderComplexSearch()}
       {renderFillings()}
       {renderCondiments()}
       {renderActive()}
